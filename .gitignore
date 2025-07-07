@@ -1,0 +1,14 @@
+# Python
+__pycache__
+
+# Virtual environment
+venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Data files
+# diabetes_prediction_dataset.csv
+
+# Model files
+# *.pkl
