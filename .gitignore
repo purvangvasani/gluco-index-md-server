@@ -12,3 +12,10 @@ venv
 
 # Model files
 # *.pkl
+
+.env
+
+output.json
+output1.json
+output_extracted.json
+hba1c.png
