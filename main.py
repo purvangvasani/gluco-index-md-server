@@ -5,7 +5,13 @@ from pydantic import BaseModel
 import joblib
 import numpy as np
 import pandas as pd
-
+from typing import Optional, Dict, Any
+from fastapi import Form, File, UploadFile
+from pathlib import Path
+import uuid
+from dotenv import load_dotenv
+from data_extract import DocumentProcessor
+import os
 # Load trained pipeline (includes preprocessing)
 # model = joblib.load("diabetes_model_max_recall.pkl")
 model = joblib.load("lightgbm_diabetes_model.pkl")
@@ -72,7 +78,7 @@ def predict(data: DiabetesInput):
         "probability": round(probability * 100, 2)
     }
 
-@app.post("/submit-report/")
+@app.post("/submit-report")
 async def submit_report(
     gender: str = Form(...),
     age: float = Form(...),
