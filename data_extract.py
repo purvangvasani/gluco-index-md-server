@@ -133,7 +133,7 @@ class DocumentProcessor:
     #     - Patient name
     #     - Date of birth
     #     - Test date
-    #     - Test results (HbA1c, Glucose, Cholesterol, etc.) with values and units
+    #     - Test_Results (HbA1c, Glucose, Cholesterol, etc.) with values and units
     #     - Any other relevant medical information
         
     #     Return the data in a structured JSON format with appropriate fields.
@@ -170,36 +170,41 @@ class DocumentProcessor:
             
     #     except Exception as e:
     #         return {"error": str(e), "extracted_text": text}
-
     def _get_structured_data(self, text: str, file_path: str) -> Dict:
-        """
-        Use GPT-4 to extract structured data from text.
-    
-        Args:
-            text: Extracted text from the document
-            file_path: Path to the original file (for image processing)
-        
-        Returns:
-            dict: Extracted structured data
-        """
         # Prepare the prompt
         system_prompt = """
-        You are a medical document processing assistant. Extract the following information from the provided document:
-        - Patient name
-        - Date of birth
-        - Test date
-        - Test results (HbA1c, Glucose, Cholesterol, etc.) with values and units
-        - Any other relevant medical information
-    
-        Return the data in a structured JSON format with appropriate fields.
-    """
-    
-        messages = [
-            {"role": "system", "content": system_prompt}
-        ]
-    
-        # If it's an image, include the image in the request
+            You are a medical document processing assistant. Extract the following information from the provided document:
+                - Patient name
+                - Date of birth
+                - Test date
+                - Test_Results (HbA1c, Glucose, Cholesterol, etc.) with values and units
+                - Any other relevant medical information
+
+            Return the data in a structured JSON format using snake_case for keys.
+            Required structure:
+            {
+                "patient_name": str,
+                "date_of_birth": str | null,
+                "test_date": str | null,
+                "test_results": {
+                    "HbA1c": {"value": float | null, "units": str | null},
+                    "Glucose": {"value": float | null, "units": str | null},
+                    "Cholesterol": {"value": float | null, "units": str | null}
+                },
+                "additional_information": {
+                    "patient_id": str | null,
+                    "sample_collected": str | null,
+                    "sample_received": str | null,
+                    "report_released": str | null
+                },
+                "source_file": str
+            }
+            Only include keys mentioned in this structure.
+        """
+
+        messages = [{"role": "system", "content": system_prompt}]
         path = Path(file_path)
+
         if path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']:
             base64_image = self._encode_image(file_path)
             messages.append({
@@ -224,16 +229,101 @@ class DocumentProcessor:
             response = self.client.chat.completions.create(
                 model="gpt-4o" if path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff'] else "gpt-4",
                 messages=messages,
-                max_tokens=1000,
+                max_tokens=1200,
                 response_format={"type": "json_object"}
             )
         
-            # Parse the response
             result = response.choices[0].message.content
-            return json.loads(result)
-        
+            data = json.loads(result)
+
+            # Ensure full structure
+            return {
+                "patient_name": data.get("patient_name", None),
+                "date_of_birth": data.get("date_of_birth", None),
+                "test_date": data.get("test_date", None),
+                "test_results": {
+                    "HbA1c": data.get("test_results", {}).get("HbA1c", {"value": None, "units": None}),
+                    "Glucose": data.get("test_results", {}).get("Glucose", {"value": None, "units": None}),
+                    "Cholesterol": data.get("test_results", {}).get("Cholesterol", {"value": None, "units": None}),
+                },
+                "additional_information": {
+                    "patient_id": data.get("additional_information", {}).get("patient_id", None),
+                    "sample_collected": data.get("additional_information", {}).get("sample_collected", None),
+                    "sample_received": data.get("additional_information", {}).get("sample_received", None),
+                    "report_released": data.get("additional_information", {}).get("report_released", None)
+                },
+                "source_file": str(path.name)
+            }
+
         except Exception as e:
-            return {"error": str(e), "extracted_text": text}
+            return {
+                "error": str(e),
+                "source_file": str(path.name),
+                "extracted_text": text
+            }
+    # def _get_structured_data(self, text: str, file_path: str) -> Dict:
+    #     """
+    #     Use GPT-4 to extract structured data from text.
+    
+    #     Args:
+    #         text: Extracted text from the document
+    #         file_path: Path to the original file (for image processing)
+        
+    #     Returns:
+    #         dict: Extracted structured data
+    #     """
+    #     # Prepare the prompt
+    #     system_prompt = """
+    #     You are a medical document processing assistant. Extract the following information from the provided document:
+    #     - Patient name
+    #     - Date of birth
+    #     - Test date
+    #     - Test_Results (HbA1c, Glucose, Cholesterol, etc.) with values and units
+    #     - Any other relevant medical information
+    
+    #     Return the data in a structured JSON format with appropriate fields.
+    # """
+    
+    #     messages = [
+    #         {"role": "system", "content": system_prompt}
+    #     ]
+    
+    #     # If it's an image, include the image in the request
+    #     path = Path(file_path)
+    #     if path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']:
+    #         base64_image = self._encode_image(file_path)
+    #         messages.append({
+    #             "role": "user",
+    #             "content": [
+    #                 {"type": "text", "text": "Extract information from this document:"},
+    #                 {
+    #                     "type": "image_url",
+    #                     "image_url": {
+    #                         "url": f"data:image/{path.suffix[1:]};base64,{base64_image}"
+    #                     }
+    #                 }
+    #             ]
+    #         })
+    #     else:
+    #         messages.append({
+    #             "role": "user",
+    #             "content": f"Extract information from this document:\n\n{text}"
+    #         })
+    
+    #     try:
+    #         response = self.client.chat.completions.create(
+    #             model="gpt-4o" if path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff'] else "gpt-4",
+    #             messages=messages,
+    #             max_tokens=1000,
+    #             response_format={"type": "json_object"}
+    #         )
+        
+    #         # Parse the response
+    #         result = response.choices[0].message.content
+    #         return json.loads(result)
+        
+    #     except Exception as e:
+    #         return {"error": str(e), "extracted_text": text}
 
 def main():
     import argparse
