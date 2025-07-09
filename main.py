@@ -186,6 +186,7 @@ async def submit_report(data: ReportData):
         extracted_data = {}
         processed_files = []
 
+        print("data: ", data)
         # Process each referenced report
         for filename in data.report_references:
             file_path = get_upload_path(filename)
