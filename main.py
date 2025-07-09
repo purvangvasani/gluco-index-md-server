@@ -269,6 +269,9 @@ async def submit_report(data: ReportData):
         #     "processed_reports": processed_files
         # })
         summary = generate_patient_summary(form_data)
+        for filename in data.report_references:
+            delete_report(filename)
+        
         return {
             "prediction": int(prediction),
             "probability": round(probability * 100, 2),
