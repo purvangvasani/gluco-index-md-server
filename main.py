@@ -255,7 +255,7 @@ async def submit_report(data: ReportData):
             "blood_glucose_level": glucose_level
         }
 
-        # print("Prepared form data:", form_data)
+        print("Prepared form data:", form_data)
         # result_data = predict(DiabetesInput(**form_data))
         # print("Result data: ", result_data)
         # Predict
