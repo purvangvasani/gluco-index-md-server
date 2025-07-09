@@ -220,13 +220,9 @@ async def submit_report(data: ReportData):
                 import traceback
                 traceback.print_exc()
 
-        # Fallback values from form
         hba1c_level = data.HbA1c_level
         glucose_level = data.blood_glucose_level
-        # print("extracted_data: ", extracted_data)
-        # Try extracting from processed data if available
         if extracted_data:
-            # print(f"Extracted keys: {list(extracted_data.keys())}")
 
             hba1c_info = extracted_data.get("HbA1c")
             glucose_info = extracted_data.get("Glucose")
@@ -256,20 +252,18 @@ async def submit_report(data: ReportData):
         }
 
         print("Prepared form data:", form_data)
-        # result_data = predict(DiabetesInput(**form_data))
-        # print("Result data: ", result_data)
-        # Predict
+
         input_df = pd.DataFrame([form_data])
         prediction = model.predict(input_df)[0]
         probability = model.predict_proba(input_df)[0][1]
-        # print("Probability: ", {
-        #     "prediction": int(prediction),
-        #     "probability": round(probability * 100, 2),
-        #     "form_data": form_data,
-        #     "report_processed": bool(extracted_data),
-        #     "processed_reports": processed_files
-        # })
-        summary = generate_patient_summary(form_data)
+        
+        summary = generate_patient_summary(
+            prediction=int(prediction),
+            probability=round(probability * 100, 2),
+            data=form_data,
+            processed_reports=processed_files,
+            report_processed=bool(extracted_data)
+        )
         for filename in data.report_references:
             delete_report(filename)
         

@@ -3,22 +3,21 @@ from openai import OpenAI
 
 OpenAI.api_key = os.getenv("OPENAI_API_KEY")
 
-def generate_patient_summary(prediction_result: dict) -> str:
+def generate_patient_summary(prediction: int, probability: float, data, processed_reports=None, report_processed=False) -> str:
     """
     Generates a health summary, advice, and action plan based on model output.
 
     Args:
-        prediction_result (dict): The prediction result dict from the model.
+        prediction (int): 0 or 1 indicating diabetes risk.
+        probability (float): Confidence percentage.
+        data: Pydantic model or object containing form input fields.
+        processed_reports (list): List of processed report names (optional).
+        report_processed (bool): Flag to indicate if any reports were processed.
 
     Returns:
         str: A UI-friendly markdown-like summary.
     """
-
-    prediction = prediction_result.get("prediction")
-    probability = prediction_result.get("probability")
-    form_data = prediction_result.get("form_data", {})
-    processed_reports = prediction_result.get("processed_reports", [])
-    report_processed = prediction_result.get("report_processed", False)
+    processed_reports = processed_reports or []
 
     system_prompt = (
         "You are a compassionate AI health assistant named GlucoIndex-md. "
@@ -34,17 +33,16 @@ def generate_patient_summary(prediction_result: dict) -> str:
         "Make it warm, simple, and supportive for a patient."
     )
 
-    # Convert input to readable text
     input_text = f"""
         **Patient Information:**
-            - Gender: {form_data.get("gender")}
-            - Age: {form_data.get("age")}
-            - Hypertension: {'Yes' if form_data.get("hypertension") else 'No'}
-            - Heart Disease: {'Yes' if form_data.get("heart_disease") else 'No'}
-            - Smoking History: {form_data.get("smoking_history")}
-            - BMI: {form_data.get("bmi")}
-            - HbA1c Level: {form_data.get("HbA1c_level")}%
-            - Blood Glucose Level: {form_data.get("blood_glucose_level")} mg/dL
+            - Gender: {data.gender}
+            - Age: {data.age}
+            - Hypertension: {'Yes' if data.hypertension else 'No'}
+            - Heart Disease: {'Yes' if data.heart_disease else 'No'}
+            - Smoking History: {data.smoking_history}
+            - BMI: {data.bmi}
+            - HbA1c Level: {data.HbA1c_level}%
+            - Blood Glucose Level: {data.blood_glucose_level} mg/dL
 
         **Prediction Outcome:**
             - Diabetes Risk: {"🟥 **Positive**" if prediction else "🟩 **Negative**"}
@@ -65,7 +63,7 @@ def generate_patient_summary(prediction_result: dict) -> str:
     )
 
     return response.choices[0].message.content.strip()
-
+    
 # if __name__ == "__main__":
 #     # Replace this with the actual model result you got from your API
 #     model_result = {
