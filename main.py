@@ -265,7 +265,7 @@ async def submit_report(data: ReportData):
             report_processed=bool(extracted_data)
         )
         for filename in data.report_references:
-            delete_report(filename)
+            await delete_report(filename)
         
         return {
             "prediction": int(prediction),

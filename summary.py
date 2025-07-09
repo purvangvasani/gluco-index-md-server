@@ -35,14 +35,14 @@ def generate_patient_summary(prediction: int, probability: float, data, processe
 
     input_text = f"""
         **Patient Information:**
-            - Gender: {data.gender}
-            - Age: {data.age}
-            - Hypertension: {'Yes' if data.hypertension else 'No'}
-            - Heart Disease: {'Yes' if data.heart_disease else 'No'}
-            - Smoking History: {data.smoking_history}
-            - BMI: {data.bmi}
-            - HbA1c Level: {data.HbA1c_level}%
-            - Blood Glucose Level: {data.blood_glucose_level} mg/dL
+            - Gender: {data["gender"]}
+            - Age: {data["age"]}
+            - Hypertension: {'Yes' if data["hypertension"] else 'No'}
+            - Heart Disease: {'Yes' if data["heart_disease"] else 'No'}
+            - Smoking History: {data["smoking_history"]}
+            - BMI: {data["bmi"]}
+            - HbA1c Level: {data["HbA1c_level"]}%
+            - Blood Glucose Level: {data["blood_glucose_level"]} mg/dL
 
         **Prediction Outcome:**
             - Diabetes Risk: {"🟥 **Positive**" if prediction else "🟩 **Negative**"}
@@ -63,7 +63,7 @@ def generate_patient_summary(prediction: int, probability: float, data, processe
     )
 
     return response.choices[0].message.content.strip()
-    
+
 # if __name__ == "__main__":
 #     # Replace this with the actual model result you got from your API
 #     model_result = {
